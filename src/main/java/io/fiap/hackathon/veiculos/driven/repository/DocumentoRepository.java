@@ -88,7 +88,7 @@ public class DocumentoRepository {
             .flatMapIterable(l -> l);
     }
 
-    public Mono<Documento> fetchById(String id) {
+    public Mono<Documento> findById(String id) {
         var request = QueryRequest.builder()
             .tableName(TABLE_NAME)
             .keyConditionExpression("#id = :id")

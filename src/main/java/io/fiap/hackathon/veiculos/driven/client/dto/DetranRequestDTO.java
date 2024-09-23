@@ -2,13 +2,13 @@ package io.fiap.hackathon.veiculos.driven.client.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.github.fge.jsonpatch.JsonPatch;
 import org.immutables.value.Value;
 
-@JsonSerialize(as = ImmutableEmissaoDocumentoResponseDTO.class)
-@JsonDeserialize(as = ImmutableEmissaoDocumentoResponseDTO.class)
+@JsonSerialize(as = ImmutableDetranRequestDTO.class)
+@JsonDeserialize(as = ImmutableDetranRequestDTO.class)
 @Value.Immutable
 @Value.Style(privateNoargConstructor = true, jdkOnly = true)
-public abstract class EmissaoDocumentoResponseDTO {
+public abstract class DetranRequestDTO {
     public abstract String getId();
+    public abstract String getWebhook();
 }

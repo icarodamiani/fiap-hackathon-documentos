@@ -1,13 +1,13 @@
 image:
-  name: veiculos
-  repository: "icarodamiani/fiap-hackathon-veiculos"
+  name: documentos
+  repository: "icarodamiani/fiap-hackathon-documentos"
   pullPolicy: IfNotPresent
   tag: "latest"
 
 replicaCount: 1
 imagePullSecrets: [ ]
-nameOverride: "pessoas"
-fullnameOverride: "pessoas"
+nameOverride: "documentos"
+fullnameOverride: "documentos"
 
 service:
   type: ClusterIP

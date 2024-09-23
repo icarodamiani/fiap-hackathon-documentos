@@ -16,23 +16,23 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 @Component
-public class EmissaoDocumentosListener implements CommandLineRunner {
+public class EmitirDocumentoListener implements CommandLineRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EmissaoDocumentosListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EmitirDocumentoListener.class);
 
     private final SimpleTriggerContext triggerContext;
     private final PeriodicTrigger trigger;
     private final Scheduler boundedElastic;
     private final DocumentoService service;
 
-    public EmissaoDocumentosListener(@Value("${aws.sqs.veiculosUpdate.delay:10000}")
-                                     String delay,
-                                     @Value("${aws.sqs.veiculosUpdate.poolSize:1}")
-                                     String poolSize,
-                                     DocumentoService service) {
+    public EmitirDocumentoListener(@Value("${aws.sqs.documentosEmitir.delay:10000}")
+                                   String delay,
+                                   @Value("${aws.sqs.documentosEmitir.poolSize:1}")
+                                   String poolSize,
+                                   DocumentoService service) {
         this.service = service;
         boundedElastic = Schedulers.newBoundedElastic(Integer.parseInt(poolSize), 10000,
-            "veiculosUpdateListenerPool", 600, true);
+            "DocumentoEmitirListenerPool", 600, true);
 
         this.triggerContext = new SimpleTriggerContext();
         this.trigger = new PeriodicTrigger(Duration.ofMillis(Long.parseLong(delay)));
@@ -55,7 +55,7 @@ public class EmissaoDocumentosListener implements CommandLineRunner {
                         Instant.now(),
                         triggerContext.lastActualExecution(),
                         null))
-                    .flatMapMany(unused -> service.handleEmissaoDocumento())
+                    .flatMapMany(unused -> service.handleEmitirDocumento())
                     .doOnComplete(() -> triggerContext.update(
                         triggerContext.lastScheduledExecution(),
                         triggerContext.lastActualExecution(),

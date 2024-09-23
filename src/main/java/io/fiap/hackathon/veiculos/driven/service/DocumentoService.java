@@ -1,37 +1,39 @@
 package io.fiap.hackathon.veiculos.driven.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonpatch.JsonPatch;
-import io.fiap.hackathon.veiculos.driven.client.SqsMessageClient;
-import io.fiap.hackathon.veiculos.driven.client.dto.EmissaoDocumentoRequestDTO;
+import io.fiap.hackathon.veiculos.driven.client.DetranClient;
+import io.fiap.hackathon.veiculos.driven.client.dto.EmitirDocumentoRequestDTO;
 import io.fiap.hackathon.veiculos.driven.domain.Documento;
+import io.fiap.hackathon.veiculos.driven.domain.ImmutableDocumento;
+import io.fiap.hackathon.veiculos.driven.exception.BusinessException;
+import io.fiap.hackathon.veiculos.driven.port.MessagingPort;
 import io.fiap.hackathon.veiculos.driven.repository.DocumentoRepository;
 import io.vavr.CheckedFunction1;
-import io.vavr.CheckedFunction2;
+import io.vavr.Function1;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 @Service
 public class DocumentoService {
     private final String queue;
     private final DocumentoRepository repository;
-    private final SqsMessageClient messageClient;
+    private final DetranClient detranClient;
+    private final MessagingPort messagingPort;
     private final ObjectMapper objectMapper;
 
-    public DocumentoService(@Value("${aws.sqs.veiculosUpdate.queue}")
-                          String queue,
+    public DocumentoService(@Value("${aws.sqs.documentosEmitir.queue}")
+                            String queue,
                             DocumentoRepository repository,
-                            SqsMessageClient messageClient,
+                            DetranClient detranClient,
+                            MessagingPort messagingPort,
                             ObjectMapper objectMapper) {
         this.repository = repository;
-        this.messageClient = messageClient;
+        this.detranClient = detranClient;
         this.queue = queue;
+        this.messagingPort = messagingPort;
         this.objectMapper = objectMapper;
     }
 
@@ -39,44 +41,37 @@ public class DocumentoService {
         return repository.save(pessoa);
     }
 
+    public Mono<Void> updateEmitido(String id, Boolean emitido) {
+        return repository.findById(id)
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new BusinessException("Documento não encontrado."))))
+            .map(documento -> ImmutableDocumento.copyOf(documento).withEmitido(emitido))
+            .flatMap(repository::save);
+            //.flatMap(notify()); TODO notificar
+    }
+
     public Mono<Void> deleteById(String id) {
         return repository.deleteById(id);
     }
 
-    public Flux<Documento> fetch(Boolean vendido) {
-        return repository.fetch(vendido);
+    public Flux<Documento> fetch(Boolean emitido) {
+        return repository.fetch(emitido);
     }
 
-    public Mono<Documento> fetchById(String id) {
-        return repository.fetchById(id);
+    public Mono<Documento> findById(String id) {
+        return repository.findById(id);
     }
 
-    public Flux<DeleteMessageResponse> handleEmissaoDocumento() {
-        return messageClient.receive(queue)
-            .filter(ReceiveMessageResponse::hasMessages)
-            .flatMapIterable(ReceiveMessageResponse::messages)
-            .flatMap(message ->
-                Mono.fromSupplier(() -> {
-                        try {
-                            return objectMapper.readValue(message.body(), EmissaoDocumentoRequestDTO.class);
-                        } catch (JsonProcessingException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }).flatMap(veiculoUpdate ->
-                        this.fetchById(veiculoUpdate.getId())
-                            .map(veiculo -> applyPatch().unchecked().apply(veiculoUpdate.getPatch(), veiculo))
-                            .map(node -> convertToVeiculo().unchecked().apply(node))
-                    )
-                    .flatMap(this::save)
-                    .flatMap(unused -> messageClient.delete(queue, message))
-            );
+
+    public Flux<Message> handleEmitirDocumento() {
+        return messagingPort.read(queue, handle(), readEvent());
     }
 
-    private CheckedFunction2<JsonPatch, Documento, JsonNode> applyPatch() {
-        return (patch, veiculo) -> patch.apply(objectMapper.convertValue(veiculo, JsonNode.class));
+    private CheckedFunction1<Message, EmitirDocumentoRequestDTO> readEvent() {
+        return message -> objectMapper.readValue(message.body(), EmitirDocumentoRequestDTO.class);
     }
 
-    private CheckedFunction1<JsonNode, Documento> convertToVeiculo() {
-        return node -> objectMapper.treeToValue(node, Documento.class);
+    private Function1<EmitirDocumentoRequestDTO, Mono<EmitirDocumentoRequestDTO>> handle() {
+        return request -> detranClient.emitirDetran(request.getId())
+            .then(Mono.just(request));
     }
 }
