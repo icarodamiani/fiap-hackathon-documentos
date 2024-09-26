@@ -15,8 +15,8 @@ permissions:
 jobs:
   build:
     environment:
-      name: ${{ inputs.environment }}
-    runs-on: self-hosted
+      name: dev
+    runs-on: ubuntu-latest
     container:
       image: openjdk:17.0.1-jdk-slim
     steps:
@@ -42,7 +42,7 @@ jobs:
     name: Publish & Deploy
     needs: [build]
     environment:  dev
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
