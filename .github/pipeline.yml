@@ -1,0 +1,97 @@
+name: CI/CD Pipeline
+run-name: Deploy Market ${{ github.event.inputs.market }} Environment ${{ github.event.inputs.environment }} by ${{ github.actor}}
+
+on:
+  workflow_dispatch:
+
+env:
+  REGION: "us-east-1"
+
+permissions: 
+  id-token: write # Token to request an OpenID Connect token. required for requesting the JWT
+  contents: write # Repository contents, commits, branches, downloads, releases, and merges.
+  packages: write
+
+jobs:
+  code-quality:
+    uses: ./.github/workflows/code-analysis.yml
+    secrets: inherit
+
+  build:
+    environment:
+      name: ${{ inputs.environment }}
+    needs: [security-scan, code-quality]
+    runs-on: self-hosted
+    container:
+      image: openjdk:17.0.1-jdk-slim
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '17'
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: ./.github/actions/run-build
+
+      - name: Archive Production Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar_documentos
+          path: target/*.jar
+          retention-days: 1
+
+  publish:
+    name: Publish & Deploy
+    needs: [build]
+    environment:  dev
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: configure aws credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+          output-credentials: true
+     
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: jar_documentos
+          path: target/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Building Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Multistage.Multistage.Dockerfile
+          load: false
+          push: true
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Deploy Helm
+        uses: bitovi/github-actions-deploy-eks-helm@v1.2.10
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY_SECRET }}
+          aws-region: ${{ env.REGION }}
+          cluster-name: mycluster
+          config-files: chart/documentos/values.yaml
+          chart-path: chart/documentos/
+          namespace: dev
+          values: key1=value1,key2=value2
+          name: documentos
