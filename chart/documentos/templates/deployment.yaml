@@ -37,22 +37,26 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            {{ - include "documentos.list-envvars" . | indent 12 }}
-            {{ - include "documentos.list-secrets" . | indent 12 }}
+            {{- include "documentos.list-envvars" . | indent 12 }}
+            {{- include "documentos.list-secrets" . | indent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
-            initialDelaySeconds: 30
             httpGet:
               path: /actuator/health/liveness
               port: http
-          readinessProbe:
             initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 10
+          readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}
