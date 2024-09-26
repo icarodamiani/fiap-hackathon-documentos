@@ -44,7 +44,7 @@ serviceAccount:
   automount: true
   # Annotations to add to the service account
   annotations: {
-    "eks.amazonaws.com/role-arn" = arn:aws:iam::769233459262:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/DE7B7059D722C6F7735FA0028236EB80
+    "eks.amazonaws.com/role-arn": arn:aws:iam::769233459262:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/DE7B7059D722C6F7735FA0028236EB80
   }
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
