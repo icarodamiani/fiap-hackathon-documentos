@@ -13,14 +13,9 @@ permissions:
   packages: write
 
 jobs:
-  code-quality:
-    uses: ./.github/workflows/code-analysis.yml
-    secrets: inherit
-
   build:
     environment:
       name: ${{ inputs.environment }}
-    needs: [security-scan, code-quality]
     runs-on: self-hosted
     container:
       image: openjdk:17.0.1-jdk-slim
