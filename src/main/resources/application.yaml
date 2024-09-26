@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: fiap-hackathon-documentos
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak.local:7777/auth/realms/vodafone
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+
+aws:
+  accessKeyId: local
+  secretAccessKey: local
+  region: us-west-2
+  dynamo:
+    uri: http://localhost:8000
+  sqs:
+    uri: http://localhost:9324
+    numberOfMessages: 5
+    waitTimeMessage: 10
+    visibilityTimeOut: 30
+    documentosEmitir:
+      queue: documentos_emitir_queue
+      delay: 1000
+      poolSize: 1
+
+detran:
+  webhook: ${WEBHOOK_URL:http://hackathon-detran-mock:8080/v1/documentos/detran/receive}
+  client:
+    connectionTimeout: 50000
+    responseTimeout: 50000
+    readTimeout: 50000
+    writeTimeout: 50000
+    maxConnections: 5
+    url: ${PAYMENT_URL:http://fastfood-payment-mock:8084}
+
+management:
+  health:
+    probes:
+      enabled: true
+  endpoint:
+    loggers:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+      show-details: "ALWAYS"
+  endpoints:
+    web:
+      exposure:
+        include: "*"
