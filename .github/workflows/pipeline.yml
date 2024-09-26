@@ -100,5 +100,5 @@ jobs:
           config-files: chart/documentos/values.yaml
           chart-path: chart/documentos/
           namespace: dev
-          values: env[0].value=${{ inputs.authentication_provider }}
+          values: env[0].value=${{ inputs.oidc_provider_issuer }}
           name: documentos
