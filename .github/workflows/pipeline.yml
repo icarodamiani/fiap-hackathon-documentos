@@ -91,7 +91,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY_SECRET }}
           aws-region: ${{ env.REGION }}
-          cluster-name: mycluster
+          cluster-name: fiap-hackathon
           config-files: chart/documentos/values.yaml
           chart-path: chart/documentos/
           namespace: dev
