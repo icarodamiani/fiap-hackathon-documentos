@@ -60,3 +60,20 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{- define "documentos.list-secrets"}}
+{{- range .Values.secrets }}
+- name: {{ .name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .secret }}
+      key: {{ .key }}
+{{- end}}
+{{- end }}
+
+{{- define "documentos.list-envvars"}}
+{{- range $index, $var := .Values.env }}
+- name: {{ $var.name }}
+  value: "{{ $var.value }}"
+{{- end }}
+{{- end }}
