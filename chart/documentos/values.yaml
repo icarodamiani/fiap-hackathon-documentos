@@ -19,12 +19,12 @@ ingress:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/healthcheck-path: "/api/actuator/health"
+    alb.ingress.kubernetes.io/healthcheck-path: "/actuator/health"
     alb.ingress.kubernetes.io/healthcheck-port: '8080'
   hosts:
-    - host: documentos.hck.io
+    - host: *
       paths:
-        - path: /
+        - path: /documentos/
           pathType: Prefix
           portName: http
 
