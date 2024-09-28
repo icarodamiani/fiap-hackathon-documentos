@@ -20,7 +20,7 @@ ingress:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
   hosts:
-    - host: docs
+    - host: documentos.hck.io
       paths:
         - path: /documentos
           pathType: Prefix
