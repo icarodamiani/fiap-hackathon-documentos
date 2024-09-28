@@ -22,7 +22,7 @@ ingress:
     alb.ingress.kubernetes.io/healthcheck-path: "/actuator/health"
     alb.ingress.kubernetes.io/healthcheck-port: '8080'
   hosts:
-    - host: *
+    - host:
       paths:
         - path: /documentos/
           pathType: Prefix
