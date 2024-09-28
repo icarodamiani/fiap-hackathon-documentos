@@ -14,10 +14,21 @@ service:
   port: 8080
 
 ingress:
-  enabled: false
-
-ingressGrpc:
-  enabled: false
+  enabled: true
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+  hosts:
+    - host: docs
+      paths:
+        - path: /documentos
+          pathType: Prefix
+          backend:
+            service:
+              name: documentos
+              port:
+                number: 8080
 
 resources: { }
 podAnnotations: { }
