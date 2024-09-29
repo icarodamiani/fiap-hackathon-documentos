@@ -8,6 +8,10 @@ on:
         type: string
         required: true
         description: 'Oidc provider issuer uri:'
+      tag:
+        type: string
+        required: true
+        description: 'Version to deploy:'
 
 env:
   REGION: "us-east-1"
@@ -83,7 +87,7 @@ jobs:
           file: Multistage.Dockerfile
           load: false
           push: true
-          tags: icarodamiani/fiap-hackathon-documentos:latest
+          tags: icarodamiani/fiap-hackathon-documentos:${{ inputs.tag }}
 
       - name: Install Helm
         uses: azure/setup-helm@v4
@@ -97,8 +101,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY_SECRET }}
           aws-region: ${{ env.REGION }}
           cluster-name: fiap-hackathon
-          config-files: chart/documentos/values.yaml
+          config-files: chart/documentos/profiles/values.yaml
           chart-path: chart/documentos/
           namespace: dev
           values: env[0].value=${{ inputs.oidc_provider_issuer }}
           name: documentos
+          version: ${{ inputs.tag }}

@@ -5,7 +5,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${OIDC_PROVIDER_ISSUER:http://localhost:7777/auth/realms/vodafone}
+          issuer-uri: ${OIDC_PROVIDER_ISSUER:http://dockerhost:7777/auth/realms/vodafone}
   jackson:
     serialization:
       FAIL_ON_EMPTY_BEANS: false
@@ -29,7 +29,7 @@ detran:
     readTimeout: 50000
     writeTimeout: 50000
     maxConnections: 5
-    url: ${DETRAN_URL:http://detran-mock:8080}
+    url: ${DETRAN_URL:http://detran:8080}
 
 management:
   health:

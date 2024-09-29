@@ -67,4 +67,4 @@ env:
   - name: DETRAN_WEBHOOK_URL
     value: http://documentos:8080/v1/documentos/detran/receive
   - name: DETRAN_URL
-    value: http://detran-mock:8080
+    value: http://detran:8080
