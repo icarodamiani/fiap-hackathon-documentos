@@ -31,7 +31,7 @@ public class DocumentoRepository {
         this.client = client;
     }
 
-    public Mono<Void> save(Documento documento) {
+    public Mono<Documento> save(Documento documento) {
         var atributos = new HashMap<String, AttributeValueUpdate>();
         atributos.put("ORGAO",
             AttributeValueUpdate.builder().value(v -> v.s(documento.getOrgao()).build()).build());
@@ -53,20 +53,7 @@ public class DocumentoRepository {
             .build();
 
         return Mono.fromFuture(client.updateItem(request))
-            .then();
-    }
-
-    public Mono<Void> deleteById(String id) {
-        var key = new HashMap<String, AttributeValue>();
-        key.put("ID", AttributeValue.fromS(id));
-
-        var request = DeleteItemRequest.builder()
-            .key(key)
-            .tableName(TABLE_NAME)
-            .build();
-
-        return Mono.fromFuture(client.deleteItem(request))
-            .then();
+            .then(Mono.just(documento));
     }
 
     public Flux<Documento> fetch(Boolean emitido) {
@@ -104,14 +91,13 @@ public class DocumentoRepository {
 
     private HashMap<String, AttributeValue> mapPessoa(Pessoa pessoa) {
         var pessoaAttr = new HashMap<String, AttributeValue>();
+        pessoaAttr.put("ID", AttributeValue.builder().s(pessoa.getId()).build());
         pessoaAttr.put("NOME", AttributeValue.builder().s(pessoa.getNome()).build());
         pessoaAttr.put("SOBRENOME", AttributeValue.builder().s(pessoa.getSobrenome()).build());
 
         var documentoPessoaAttr = new HashMap<String, AttributeValue>();
         documentoPessoaAttr.put("TIPO", AttributeValue.builder().s(pessoa.getDocumento().getTipo()).build());
         documentoPessoaAttr.put("VALOR", AttributeValue.builder().s(pessoa.getDocumento().getValor()).build());
-        documentoPessoaAttr.put("EXPIRACAO",
-            AttributeValue.builder().s(String.valueOf(pessoa.getDocumento().getExpiracao().toEpochDay())).build());
 
         pessoaAttr.put("DOCUMENTO", AttributeValue.builder().m(documentoPessoaAttr).build());
 
@@ -120,6 +106,8 @@ public class DocumentoRepository {
 
     private HashMap<String, AttributeValue> mapVeiculo(Veiculo veiculo) {
         var atributos = new HashMap<String, AttributeValue>();
+        atributos.put("ID",
+            AttributeValue.builder().s(veiculo.getId()).build());
         atributos.put("COR",
             AttributeValue.builder().s(veiculo.getCor()).build());
         atributos.put("ANO",
@@ -139,26 +127,27 @@ public class DocumentoRepository {
     }
 
     private Documento convertItem(Map<String, AttributeValue> item) {
+        Map<String, AttributeValue> veiculoAttr = item.get("VEICULO").m();
+
         var veiculo = ImmutableVeiculo.builder()
-            .id(item.get("ID").s())
-            .ano(item.get("ANO").s())
-            .cor(item.get("COR").s())
-            .marca(item.get("MARCA").s())
-            .cambio(item.get("CAMBIO").s())
-            .modelo(item.get("MODELO").s())
+            .id(veiculoAttr.get("ID").s())
+            .ano(veiculoAttr.get("ANO").s())
+            .cor(veiculoAttr.get("COR").s())
+            .placa(veiculoAttr.get("PLACA").s())
+            .marca(veiculoAttr.get("MARCA").s())
+            .cambio(veiculoAttr.get("CAMBIO").s())
+            .modelo(veiculoAttr.get("MODELO").s())
+            .renavam(veiculoAttr.get("RENAVAM").s())
             .build();
 
+        Map<String, AttributeValue> pessoaAttr = item.get("PESSOA").m();
         var pessoa = ImmutablePessoa.builder()
-            .id(item.get("ID").s())
-            .nome(item.get("NOME").s())
-            .sobrenome(item.get("SOBRENOME").s())
+            .id(pessoaAttr.get("ID").s())
+            .nome(pessoaAttr.get("NOME").s())
+            .sobrenome(pessoaAttr.get("SOBRENOME").s())
             .documento(ImmutableDocumentoPessoa.builder()
-                .tipo(item.get("DOCUMENTO").m().get("TIPO").s())
-                .valor(item.get("DOCUMENTO").m().get("VALOR").s())
-                .expiracao(LocalDate.ofEpochDay(
-                        Long.parseLong(item.get("DOCUMENTO").m().get("EXPIRACAO").s())
-                    )
-                )
+                .tipo(pessoaAttr.get("DOCUMENTO").m().get("TIPO").s())
+                .valor(pessoaAttr.get("DOCUMENTO").m().get("VALOR").s())
                 .build()
             )
             .build();

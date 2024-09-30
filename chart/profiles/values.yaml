@@ -65,6 +65,6 @@ env:
   - name: AWS_REGION
     value: us-east-1
   - name: DETRAN_WEBHOOK_URL
-    value: http://documentos:8080/v1/documentos/detran/receive
+    value: http://documentos:8080/documentos/detran/receive
   - name: DETRAN_URL
     value: http://detran:8080

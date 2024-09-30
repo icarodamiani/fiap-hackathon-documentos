@@ -3,6 +3,7 @@ package io.fiap.hackathon.documentos.driven.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fiap.hackathon.documentos.driven.client.DetranClient;
 import io.fiap.hackathon.documentos.driven.client.dto.EmitirDocumentoRequestDTO;
+import io.fiap.hackathon.documentos.driven.client.dto.ImmutableMarcarVeiculoVendidoRequestDTO;
 import io.fiap.hackathon.documentos.driven.domain.Documento;
 import io.fiap.hackathon.documentos.driven.domain.ImmutableDocumento;
 import io.fiap.hackathon.documentos.driven.exception.BusinessException;
@@ -18,52 +19,56 @@ import software.amazon.awssdk.services.sqs.model.Message;
 
 @Service
 public class DocumentoService {
-    private final String queue;
+    private final String emitirDocumentoQueue;
+    private final String veiculosVendaQueue;
     private final DocumentoRepository repository;
     private final DetranClient detranClient;
     private final MessagingPort messagingPort;
     private final ObjectMapper objectMapper;
 
     public DocumentoService(@Value("${aws.sqs.documentosEmitir.queue}")
-                            String queue,
+                            String emitirDocumentoQueue,
+                            @Value("${aws.sqs.veiculosVenda.queue}")
+                            String veiculosVendaQueue,
                             DocumentoRepository repository,
                             DetranClient detranClient,
                             MessagingPort messagingPort,
                             ObjectMapper objectMapper) {
         this.repository = repository;
         this.detranClient = detranClient;
-        this.queue = queue;
+        this.emitirDocumentoQueue = emitirDocumentoQueue;
+        this.veiculosVendaQueue = veiculosVendaQueue;
         this.messagingPort = messagingPort;
         this.objectMapper = objectMapper;
-    }
-
-    public Mono<Void> save(Documento pessoa) {
-        return repository.save(pessoa);
     }
 
     public Mono<Void> updateEmitido(String id, Boolean emitido) {
         return repository.findById(id)
             .switchIfEmpty(Mono.defer(() -> Mono.error(new BusinessException("Documento não encontrado."))))
             .map(documento -> ImmutableDocumento.copyOf(documento).withEmitido(emitido))
-            .flatMap(repository::save);
-            //.flatMap(notify()); TODO notificar
+            .flatMap(repository::save)
+            .flatMap(documento -> this.confirmarVendaVeiculo(documento.getVeiculo().getId()))
+            .then();
     }
 
-    public Mono<Void> deleteById(String id) {
-        return repository.deleteById(id);
+    public Mono<Void> confirmarVendaVeiculo(String veiculoId) {
+        return Mono.fromCallable(() -> ImmutableMarcarVeiculoVendidoRequestDTO.builder()
+                .id(veiculoId)
+                .build())
+            .flatMap(request -> messagingPort.send(veiculosVendaQueue, request, serializePayload()))
+            .then();
+    }
+
+    private <T> CheckedFunction1<T, String> serializePayload() {
+        return objectMapper::writeValueAsString;
     }
 
     public Flux<Documento> fetch(Boolean emitido) {
         return repository.fetch(emitido);
     }
 
-    public Mono<Documento> findById(String id) {
-        return repository.findById(id);
-    }
-
-
     public Flux<Message> handleEmitirDocumento() {
-        return messagingPort.read(queue, handle(), readEvent());
+        return messagingPort.read(emitirDocumentoQueue, handle(), readEvent());
     }
 
     private CheckedFunction1<Message, EmitirDocumentoRequestDTO> readEvent() {
@@ -71,7 +76,18 @@ public class DocumentoService {
     }
 
     private Function1<EmitirDocumentoRequestDTO, Mono<EmitirDocumentoRequestDTO>> handle() {
-        return request -> detranClient.emitirDetran(request.getId())
+        return request -> Mono.fromCallable(() ->
+                ImmutableDocumento.builder()
+                    .id(request.getId())
+                    .tipo(request.getTipo())
+                    .orgao(request.getOrgao())
+                    .emitido(false)
+                    .veiculo(request.getVeiculo())
+                    .pessoa(request.getPessoa())
+                    .build()
+            )
+            .flatMap(repository::save)
+            .flatMap(documento -> detranClient.emitirDetran(documento.getId()))
             .then(Mono.just(request));
     }
 }

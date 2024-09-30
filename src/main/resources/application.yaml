@@ -11,7 +11,6 @@ spring:
       FAIL_ON_EMPTY_BEANS: false
 
 aws:
-  region: ${AWS_REGION:us-east-1}
   sqs:
     numberOfMessages: 5
     waitTimeMessage: 10
@@ -20,9 +19,13 @@ aws:
       queue: documentos_emitir_queue
       delay: 1000
       poolSize: 1
+    veiculosConfirmarVenda:
+      queue: veiculos_confirmar_venda_queue
+      delay: 1000
+      poolSize: 1
 
 detran:
-  webhook: ${DETRAN_WEBHOOK_URL:http://documentos:8080/v1/documentos/detran/receive}
+  webhook: ${DETRAN_WEBHOOK_URL:http://documentos:8080/documentos/detran/receber}
   client:
     connectionTimeout: 50000
     responseTimeout: 50000

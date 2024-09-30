@@ -12,5 +12,4 @@ import org.immutables.value.Value;
 public abstract class DocumentoPessoa {
     public abstract String getTipo();
     public abstract String getValor();
-    public abstract LocalDate getExpiracao();
 }

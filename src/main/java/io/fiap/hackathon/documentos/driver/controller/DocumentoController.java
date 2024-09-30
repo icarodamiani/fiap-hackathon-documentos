@@ -29,14 +29,14 @@ public class DocumentoController {
         this.mapper = mapper;
     }
 
-    @PostMapping("/detran/receive")
+    @PostMapping("/detran/receber")
     @Operation(description = "Recebe respostas da integração junto ao orgão emissor")
     public Mono<Void> receive(@RequestBody DetranResponseDTO detranResponseDTO) {
         return documentoService.updateEmitido(detranResponseDTO.getId(), detranResponseDTO.getEmitido());
     }
 
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @Operation(description = "Busca todos os documentos")
     public Flux<DocumentoDTO> fetch(@RequestParam Boolean emitido) {
         return documentoService.fetch(emitido)

@@ -33,7 +33,7 @@ public class DetranClient {
         ).flatMap(request ->
             client
                 .post()
-                .uri("/v1/detran/documentos/emitir")
+                .uri("/detran/documentos/emitir")
                 .body(BodyInserters.fromValue(request))
                 .retrieve()
                 .onStatus(status -> HttpStatus.NOT_FOUND == status,

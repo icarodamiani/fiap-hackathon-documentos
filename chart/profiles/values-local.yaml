@@ -14,14 +14,7 @@ service:
   port: 8080
 
 ingress:
-  enabled: true
-  className: "nginx"
-  hosts:
-    - host: "documentos.local.io"
-      paths:
-        - path: /
-          pathType: Prefix
-          portName: http
+  enabled: false
 
 resources: { }
 podAnnotations: { }
@@ -56,6 +49,6 @@ serviceAccount:
 
 env:
   - name: DETRAN_WEBHOOK_URL
-    value: http://documentos:8080/v1/documentos/detran/receive
+    value: http://documentos:8080/documentos/detran/receber
   - name: DETRAN_URL
     value: http://detran:8080
